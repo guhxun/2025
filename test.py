@@ -1,120 +1,116 @@
 import streamlit as st
+from datetime import datetime
 import pandas as pd
 
-# ===================== 설정 =====================
-st.set_page_config(
-    page_title="💖🧠 스트레스 진단 게임💥🧠",
-    page_icon="🧠",
-    layout="wide"
-)
+# ===============================
+# 🎉 앱 기본 설정
+# ===============================
+st.set_page_config(page_title="💆 스트레스 자가 진단", page_icon="🧘", layout="centered")
 
-# 초기 상태
-if "answers" not in st.session_state: st.session_state.answers=[]
-if "current_question" not in st.session_state: st.session_state.current_question=0
-if "page" not in st.session_state: st.session_state.page="intro"
+# ===============================
+# 🌈 화려한 배경 + CSS
+# ===============================
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
+    background-attachment: fixed;
+}
+.glass {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+.shiny {
+    background: linear-gradient(90deg, #f83600, #f9d423);
+    -webkit-background-clip: text;
+    color: transparent;
+    font-weight: 900;
+    font-size:2rem;
+    animation: glow 5s ease-in-out infinite;
+}
+@keyframes glow {
+    0% { text-shadow: 0 0 10px #f83600; }
+    50% { text-shadow: 0 0 20px #f9d423; }
+    100% { text-shadow: 0 0 10px #f83600; }
+}
+hr {border: 0; height: 1px; background: linear-gradient(to right, transparent, #000, transparent);}
+</style>
+""", unsafe_allow_html=True)
 
-# ===================== 결과 계산 =====================
-def calculate_result(answers):
-    score = sum(answers)
-    if score <= 20: return "😌 낮음", "💚 잘 관리 중! 🌿", "#A8E6CF"
-    elif score <= 40: return "🙂 보통", "💛 조금 피곤해요 🎶", "#FFD3B6"
-    elif score <= 60: return "😥 높음", "🧡 많이 힘들어요 🧘", "#FFAAA5"
-    else: return "😢 심각", "❤️ 상담 고려 필요 💌", "#FF8B94"
-
-# ===================== 질문 데이터 =====================
-questions=[
-"1️⃣ 잠들기 어려웠다 😴","2️⃣ 해야 할 일이 너무 많다 📚","3️⃣ 사소한 일에도 짜증난다 😡",
-"4️⃣ 집중이 잘 안된다 🧠","5️⃣ 피곤함이 지속된다 🥱","6️⃣ 마음이 불안하거나 조급하다 😟",
-"7️⃣ 주변 사람들과 갈등이 잦다 👥","8️⃣ 식습관이 불규칙하다 🍔","9️⃣ 두통/근육통 등 신체적 증상이 있다 🤕",
-"🔟 우울감을 느낀다 😢","11️⃣ 사회적 모임에 피로를 느낀다 🏃‍♂️","12️⃣ 작은 일에도 걱정이 많다 🤯",
-"13️⃣ 의사결정이 불안하다 ❓","14️⃣ 일을 끝까지 하지 못한다 ⏳","15️⃣ 주변 환경에 쉽게 짜증난다 🌪️",
-"16️⃣ 몸이 긴장되고 뻐근하다 💪","17️⃣ 하루 중 기분 변화가 크다 🎭","18️⃣ 미래에 대한 불안감이 있다 🔮",
-"19️⃣ 식사 패턴이 불규칙하거나 폭식을 한다 🍫","20️⃣ 쉬는 날에도 마음이 편하지 않다 🛌"
+# ===============================
+# 🧠 문항 정의 (20문항, 점수 1~5)
+# ===============================
+QUESTIONS = [
+    "최근에 쉽게 짜증이 나거나 화가 나나요? 😡",
+    "잠을 충분히 자지 못하거나 불면이 있나요? 🌙",
+    "일이나 공부에 대한 집중력이 떨어지나요? 🧠",
+    "자주 피곤하고 힘이 없다고 느끼나요? 😴",
+    "불안감이나 긴장감이 자주 나타나나요? 😰",
+    "사소한 일에도 신경이 많이 쓰이나요? 🧐",
+    "식사 습관이 불규칙하거나 편식이 있나요? 🍔",
+    "최근에 우울하거나 기분이 가라앉나요? 😞",
+    "사람들과 관계에서 피곤함을 느끼나요? 😓",
+    "계획대로 일이 잘 안 되어 스트레스를 느끼나요? 📅",
+    "머리가 자주 무겁거나 아픈 느낌이 있나요? 🤕",
+    "예민해지고 작은 일에도 울컥하나요? 😢",
+    "운동이나 활동할 시간이 줄어들었나요? 🏃",
+    "업무나 공부를 미루는 경우가 많나요? ⏳",
+    "불안이나 걱정으로 밤에 잠을 설치나요? 🌃",
+    "하루 중 마음이 편하지 않은 순간이 많나요? 😖",
+    "무기력감이 느껴지거나 의욕이 줄었나요? 😔",
+    "스트레스로 인해 집중력이 흐트러지나요? 🌀",
+    "최근에 감정 기복이 심한가요? 🎢",
+    "스트레스 때문에 건강이 영향을 받는다고 느끼나요? ❤️"
 ]
 
-options=["0️⃣ 전혀 아니다","1️⃣ 가끔 그렇다","2️⃣ 자주 그렇다","3️⃣ 거의 항상 그렇다"]
-score_mapping={"0️⃣ 전혀 아니다":0,"1️⃣ 가끔 그렇다":1,"2️⃣ 자주 그렇다":2,"3️⃣ 거의 항상 그렇다":3}
+# ===============================
+# 🧮 세션 상태 초기화
+# ===============================
+if "current_q" not in st.session_state:
+    st.session_state.current_q = 0
+if "answers" not in st.session_state:
+    st.session_state.answers = [0]*len(QUESTIONS)
 
-# ===================== 메인 화면 =====================
-if st.session_state.page=="intro":
-    st.markdown("""
-    <div style='background: linear-gradient(135deg,#f6d365,#fda085);
-                padding:80px; border-radius:30px; text-align:center;
-                box-shadow: 10px 10px 50px #888888;'>
-        <h1 style='font-size:4em;'>💖🧠 스트레스 진단 게임 🧠💖</h1>
-        <p style='font-size:1.8em;'>20문항으로 나의 스트레스 상태를 확인! 🎉✨</p>
-        <p style='font-size:1.5em;'>선택할 때마다 버튼 색이 변하고 이모지가 폭발합니다! 🌈💫</p>
-    </div>
-    """,unsafe_allow_html=True)
-    if st.button("🚀 시작하기 🚀💥"): 
-        st.session_state.page="quiz"
-        st.rerun()
+# ===============================
+# 🌟 홈 / 문제 화면
+# ===============================
+st.markdown("<h1 class='shiny'>💆 스트레스 자가 진단 🧘</h1>", unsafe_allow_html=True)
 
-# ===================== 질문 화면 =====================
-elif st.session_state.page=="quiz":
-    q_idx=st.session_state.current_question
-    st.markdown(f"""
-    <div style='background-color:#FFF5E1;padding:50px;border-radius:30px;
-                box-shadow: 10px 10px 30px #888888;text-align:center;'>
-        <h2 style='font-size:3em;'>문제 {q_idx+1}/{len(questions)}</h2>
-        <p style='font-size:2em;'>{questions[q_idx]}</p>
-    </div>
-    """,unsafe_allow_html=True)
+st.markdown("<div class='glass'>한 화면당 한 질문이 표시됩니다. 아래에서 점수를 선택하세요 (1: 전혀, 5: 매우 심함)</div>", unsafe_allow_html=True)
 
-    # 선택지 버튼 (클릭 시 강조)
-    for opt in options:
-        if st.button(f"{opt} 🌟",key=f"{q_idx}_{opt}"):
-            st.session_state.answers.append(score_mapping[opt])
-            st.session_state.current_question+=1
-            if st.session_state.current_question>=len(questions):
-                st.session_state.page="result"
-            st.rerun()
+q_idx = st.session_state.current_q
+st.markdown(f"<div class='glass'><b>질문 {q_idx+1} / {len(QUESTIONS)}</b><br>{QUESTIONS[q_idx]}</div>", unsafe_allow_html=True)
 
-    # 원형 느낌 진행률
-    st.markdown(f"<p style='text-align:center;font-size:1.2em;'>진행률: {int((q_idx/len(questions))*100)}%</p>",unsafe_allow_html=True)
-    st.progress(q_idx/len(questions))
+score = st.radio("점수를 선택하세요", options=[1,2,3,4,5], index=st.session_state.answers[q_idx]-1 if st.session_state.answers[q_idx]>0 else 0, horizontal=True, key=f"q{q_idx}")
+st.session_state.answers[q_idx] = score
 
-# ===================== 결과 화면 =====================
-elif st.session_state.page=="result":
-    total_score=sum(st.session_state.answers)
-    max_score=len(questions)*3
-    result_type, description, color=calculate_result(st.session_state.answers)
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("⬅ 이전", disabled=(q_idx==0)):
+        st.session_state.current_q -= 1
+with col2:
+    if st.button("다음 ➡", disabled=(q_idx==len(QUESTIONS)-1)):
+        st.session_state.current_q += 1
 
-    # 🎨 결과 카드
-    st.markdown(f"""
-    <div style='background:{color};padding:60px;border-radius:40px;
-                text-align:center;box-shadow:10px 10px 50px #888888;'>
-        <h1 style='font-size:4em;'>{result_type} 🎉✨</h1>
-        <p style='font-size:2.5em;'>총점: {total_score}/{max_score}</p>
-        <p style='font-size:2em;'>{description}</p>
-    </div>
-    """,unsafe_allow_html=True)
-
-    st.progress(total_score/max_score)
-
-    # 항목별 점수 그래프
-    df=pd.DataFrame({"질문":[f"Q{i+1}" for i in range(len(st.session_state.answers))],
-                     "점수":st.session_state.answers})
-    st.bar_chart(df.set_index("질문"))
-
-    # 완화 팁 카드
-    st.markdown("""
-    <div style='background-color:#FFF0F5;padding:40px;border-radius:25px;text-align:center;
-                box-shadow: 5px 5px 20px #888888;'>
-        <h2 style='font-size:2em;'>🌿 스트레스 완화 팁 🌿</h2>
-        <ul style='font-size:1.5em;'>
-            <li>🧘‍♀️ 심호흡 & 명상</li>
-            <li>🚶‍♂️ 가벼운 산책</li>
-            <li>🎶 음악 감상</li>
-            <li>📞 친구/가족과 대화</li>
-            <li>💤 규칙적인 숙면</li>
-        </ul>
-    </div>
-    """,unsafe_allow_html=True)
-
-    st.balloons()
-    if st.button("🔄 다시 하기 💥"): 
-        st.session_state.answers=[]
-        st.session_state.current_question=0
-        st.session_state.page="intro"
-        st.rerun()
+if q_idx == len(QUESTIONS)-1:
+    if st.button("🎯 결과 보기"):
+        total = sum(st.session_state.answers)
+        st.session_state.total_score = total
+        # 결과 계산
+        if total <= 40:
+            status = "⚡ 낮음"
+            tip = "스트레스 수준이 낮아요. 규칙적인 생활과 가벼운 운동을 유지하세요! 🏃‍♂️"
+        elif total <= 70:
+            status = "🔥 보통"
+            tip = "적절한 스트레스 관리가 필요해요. 명상, 운동, 휴식 시간을 늘리세요! 🧘‍♀️"
+        else:
+            status = "💥 높음"
+            tip = "스트레스가 높은 상태입니다. 충분한 휴식과 전문가 상담을 권장합니다! 🩺"
+        
+        st.markdown(f"<h2 class='shiny'>결과: {status} ({total}/100)</h2>", unsafe_allow_html=True)
+        st.markdown(f"<div class='glass'><b>관리 팁:</b> {tip}</div>", unsafe_allow_html=True)
+        st.balloons()
