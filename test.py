@@ -1,31 +1,4 @@
 import streamlit as st
-
-# 🎨 앱 기본 세팅
-st.set_page_config(page_title="이상형 심리테스트", page_icon="💘", layout="centered")
-
-# 🧠 상태 초기화
-if "answers" not in st.session_state:
-    st.session_state.answers = []
-
-if "page" not in st.session_state:
-    st.session_state.page = "intro"
-
-
-# 🎯 결과 계산 함수
-def calculate_result(answers):
-    score = sum(answers)
-
-    if score <= 5:
-        return "💖 따뜻한 배려형", "항상 내 편이 되어주고 마음을 챙겨주는 다정한 이상형이에요! 🥰🌸"
-    elif score <= 10:
-        return "😂 유머러스 인싸형", "언제나 분위기를 살리고 웃음을 주는 매력적인 이상형이에요! 🎉🤣"
-    elif score <= 15:
-        return "🧠 똑똑한 브레인형", "대화만 해도 똑똑함이 뿜뿜! 지적인 매력의 이상형이에요. 📚✨"
-    else:
-        return "🎨 자유로운 아티스트형", "창의적이고 독창적인 매력으로 가득한 이상형이에요! 🌈🎨"
-
-
-# 📌 인트로 페이지import streamlit as st
 import pandas as pd
 
 # 🎨 앱 기본 세팅
@@ -37,7 +10,6 @@ if "answers" not in st.session_state:
 
 if "page" not in st.session_state:
     st.session_state.page = "intro"
-
 
 # 🎯 결과 계산 함수
 def calculate_result(answers):
@@ -51,17 +23,15 @@ def calculate_result(answers):
     else:
         return "😢 심각한 스트레스", "전문가 상담을 고려해보세요. 혼자 감당하지 마세요 💌"
 
-
 # 📌 인트로 페이지
 if st.session_state.page == "intro":
     st.title("🧠 스트레스 자가 진단 테스트")
     st.subheader("당신의 스트레스 수준을 확인해보세요")
-
     st.markdown("👉 최근 1주일 ~ 1개월 동안의 경험을 바탕으로 답해주세요.")
+    
     if st.button("시작하기 🚀"):
         st.session_state.page = "quiz"
         st.rerun()
-
 
 # 📌 질문 페이지
 elif st.session_state.page == "quiz":
@@ -81,16 +51,23 @@ elif st.session_state.page == "quiz":
     ]
 
     options = ["0: 전혀 아니다", "1: 가끔 그렇다", "2: 자주 그렇다", "3: 거의 항상 그렇다"]
+    
+    # 점수 매핑
+    score_mapping = {
+        "0: 전혀 아니다": 0,
+        "1: 가끔 그렇다": 1,
+        "2: 자주 그렇다": 2,
+        "3: 거의 항상 그렇다": 3
+    }
 
     st.session_state.answers = []  # 초기화 후 다시 담기
     for i, q in enumerate(questions):
         answer = st.radio(q, options, horizontal=True, key=f"q{i}")
-        st.session_state.answers.append(int(answer[0]))  # 선택된 숫자만 추출
+        st.session_state.answers.append(score_mapping[answer])
 
     if st.button("결과 보기 🎉"):
         st.session_state.page = "result"
         st.rerun()
-
 
 # 📌 결과 페이지
 elif st.session_state.page == "result":
@@ -100,22 +77,22 @@ elif st.session_state.page == "result":
     total_score = sum(st.session_state.answers)
     max_score = len(st.session_state.answers) * 3
 
-    # 🏷️ 결과 표시
+    # 결과 표시
     st.subheader(result_type)
     st.info(f"👉 총점: {total_score} / {max_score}")
     st.success(description)
 
-    # 📈 진행 게이지
+    # 진행 게이지
     st.progress(total_score / max_score)
 
-    # 📊 항목별 점수 시각화
+    # 항목별 점수 시각화
     df = pd.DataFrame({
         "질문 번호": [f"Q{i+1}" for i in range(len(st.session_state.answers))],
         "점수": st.session_state.answers
     })
     st.bar_chart(df.set_index("질문 번호"))
 
-    # 🌿 스트레스 완화 팁
+    # 스트레스 완화 팁
     st.markdown("### 🌿 스트레스 완화 팁")
     st.markdown("""
     - 🧘 **호흡 명상**: 눈을 감고 깊게 호흡하기  
