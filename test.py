@@ -48,27 +48,6 @@ hr {border:0; height:1px; background:linear-gradient(to right, transparent, #000
 """, unsafe_allow_html=True)
 
 # ===============================
-# 🌟 홈 화면
-# ===============================
-st.markdown("<h1 class='shiny'>💆‍♂️ 스트레스 자가 진단 월드 🧘‍♀️</h1>", unsafe_allow_html=True)
-st.markdown("""
-<div class='glass'>
-<p>20문항 자가 진단을 통해 당신의 스트레스 수준을 측정하고, 맞춤형 관리 팁을 제공합니다.</p>
-<ul>
-<li>📌 한 화면당 한 질문으로 집중</li>
-<li>📈 결과는 점수 기반으로 시각화</li>
-<li>🌟 관리 팁과 행동 가이드 제공</li>
-</ul>
-<p>아래 버튼을 눌러 테스트를 시작하세요!</p>
-</div>
-""", unsafe_allow_html=True)
-
-if st.button("🚀 테스트 시작", key="start_test"):
-    st.session_state.current_q = 0
-    st.session_state.answers = [0]*20
-    st.experimental_rerun()
-
-# ===============================
 # 🧠 문항 정의 (20문항, 점수 1~5)
 # ===============================
 QUESTIONS = [
@@ -97,15 +76,35 @@ QUESTIONS = [
 # ===============================
 # 🧮 세션 상태 초기화
 # ===============================
-if "current_q" not in st.session_state:
+if 'current_q' not in st.session_state:
     st.session_state.current_q = None
-if "answers" not in st.session_state:
+if 'answers' not in st.session_state:
     st.session_state.answers = [0]*len(QUESTIONS)
+
+# ===============================
+# 🌟 홈 화면
+# ===============================
+if st.session_state.current_q is None:
+    st.markdown("<h1 class='shiny'>💆‍♂️ 스트레스 자가 진단 월드 🧘‍♀️</h1>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class='glass'>
+    <p>20문항 자가 진단을 통해 당신의 스트레스 수준을 측정하고, 맞춤형 관리 팁을 제공합니다.</p>
+    <ul>
+    <li>📌 한 화면당 한 질문으로 집중</li>
+    <li>📈 결과는 점수 기반으로 시각화</li>
+    <li>🌟 관리 팁과 행동 가이드 제공</li>
+    </ul>
+    <p>아래 버튼을 눌러 테스트를 시작하세요!</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("🚀 테스트 시작", key="start_test"):
+        st.session_state.current_q = 0
 
 # ===============================
 # 🌟 문제 화면
 # ===============================
-if st.session_state.current_q is not None:
+else:
     q_idx = st.session_state.current_q
     st.markdown(f"<div class='glass'><b>질문 {q_idx+1} / {len(QUESTIONS)}</b><br>{QUESTIONS[q_idx]}</div>", unsafe_allow_html=True)
 
@@ -115,12 +114,10 @@ if st.session_state.current_q is not None:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("⬅ 이전", disabled=(q_idx==0)):
-            st.session_state.current_q -= 1
-            st.experimental_rerun()
+            st.session_state.current_q = max(0, st.session_state.current_q - 1)
     with col2:
         if st.button("다음 ➡", disabled=(q_idx==len(QUESTIONS)-1)):
-            st.session_state.current_q += 1
-            st.experimental_rerun()
+            st.session_state.current_q = min(len(QUESTIONS)-1, st.session_state.current_q + 1)
 
     if q_idx == len(QUESTIONS)-1:
         if st.button("🎯 결과 보기"):
@@ -138,3 +135,4 @@ if st.session_state.current_q is not None:
             st.markdown(f"<h2 class='shiny'>결과: {status} ({total}/100)</h2>", unsafe_allow_html=True)
             st.markdown(f"<div class='glass'><b>관리 팁:</b> {tip}</div>", unsafe_allow_html=True)
             st.balloons()
+
