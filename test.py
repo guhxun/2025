@@ -18,13 +18,13 @@ if "page" not in st.session_state:
 def calculate_result(answers):
     score = sum(answers)
     if score <= 20:
-        return "😌 스트레스 수준 낮음", "잘 관리하고 있어요! 꾸준히 자기 관리하세요 🌿"
+        return "😌 스트레스 수준 낮음", "잘 관리하고 있어요! 꾸준히 자기 관리하세요 🌿", "#A8E6CF"
     elif score <= 40:
-        return "🙂 보통 수준", "조금 지친 상태예요. 충분한 휴식과 취미 생활이 필요해요 🎶"
+        return "🙂 보통 수준", "조금 지친 상태예요. 충분한 휴식과 취미 생활이 필요해요 🎶", "#FFD3B6"
     elif score <= 60:
-        return "😥 스트레스 높음", "많이 힘들어 하고 있네요. 자기 돌봄이 꼭 필요합니다 🧘"
+        return "😥 스트레스 높음", "많이 힘들어 하고 있네요. 자기 돌봄이 꼭 필요합니다 🧘", "#FFAAA5"
     else:
-        return "😢 심각한 스트레스", "전문가 상담을 고려해보세요. 혼자 감당하지 마세요 💌"
+        return "😢 심각한 스트레스", "전문가 상담을 고려해보세요. 혼자 감당하지 마세요 💌", "#FF8B94"
 
 # 질문 리스트 (20문항)
 questions = [
@@ -60,11 +60,9 @@ score_mapping = {
 
 # 📌 인트로 페이지
 if st.session_state.page == "intro":
-    st.title("🧠 스트레스 자가 진단 테스트")
-    st.subheader("당신의 스트레스 수준을 확인해보세요")
-    st.markdown("👉 최근 1주일 ~ 1개월 동안의 경험을 바탕으로 답해주세요.")
+    st.markdown("<h1 style='text-align: center;'>🧠 스트레스 자가 진단 테스트 🧠</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>당신의 스트레스 수준을 화려하게 확인해보세요 ✨</h4>", unsafe_allow_html=True)
     st.markdown("💡 한 화면에 한 문제씩 표시됩니다.")
-
     if st.button("시작하기 🚀"):
         st.session_state.page = "quiz"
         st.rerun()
@@ -72,7 +70,7 @@ if st.session_state.page == "intro":
 # 📌 질문 페이지 (한 화면씩)
 elif st.session_state.page == "quiz":
     q_idx = st.session_state.current_question
-    st.title(f"문제 {q_idx + 1} / {len(questions)}")
+    st.markdown(f"### 문제 {q_idx + 1} / {len(questions)}")
     st.write(questions[q_idx])
     
     answer = st.radio("선택하세요", options, horizontal=True, key=f"q{q_idx}")
@@ -90,16 +88,18 @@ elif st.session_state.page == "quiz":
 
 # 📌 결과 페이지
 elif st.session_state.page == "result":
-    st.title("📊 스트레스 진단 결과")
-
     total_score = sum(st.session_state.answers)
     max_score = len(questions) * 3
-    result_type, description = calculate_result(st.session_state.answers)
+    result_type, description, color = calculate_result(st.session_state.answers)
 
-    # 결과 표시
-    st.subheader(result_type)
-    st.info(f"👉 총점: {total_score} / {max_score}")
-    st.success(description)
+    # 🎨 카드 스타일
+    st.markdown(f"""
+        <div style="background-color: {color}; padding: 20px; border-radius: 15px; text-align:center;">
+            <h2 style="font-size: 2em;">{result_type}</h2>
+            <p style="font-size: 1.2em;">총점: {total_score} / {max_score}</p>
+            <p style="font-size: 1em;">{description}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     # 진행 게이지
     st.progress(total_score / max_score)
@@ -128,5 +128,3 @@ elif st.session_state.page == "result":
         st.session_state.current_question = 0
         st.session_state.page = "intro"
         st.rerun()
-
-
